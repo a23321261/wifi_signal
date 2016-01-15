@@ -21,16 +21,19 @@ int seqNum = 0 ;
 class RasPI_Area {
 public :
   string AP ;
-  string Mon[2] ;
+  string Mon[4] ;
 
-  RasPI_Area( string _AP, string _mon0, string _mon1 ) {
+  RasPI_Area( string _AP, string _mon0, string _mon1, string _mon2, string _mon3 ) {
     AP = _AP ;
     Mon[0] = _mon0 ;
     Mon[1] = _mon1 ;
+    Mon[2] = _mon2 ;
+    Mon[3] = _mon3 ;
   } // RasPI_Area()
 };
 
 mutex mylock ;
+// lock data
 
 int verify_knownhost(ssh_session session)
 {
@@ -142,7 +145,7 @@ bool CreateSSH_Link( ssh_session & targetSession, string targetIP ) {
 
 class dbmSeq {
 public :
-  int signal[3] ;
+  int signal[3] ; ////////////////////////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   int seq ;
   // a dbmSeq has three signal
 };
@@ -159,12 +162,12 @@ class AP_Info {
 public:
   string ipAddr ;
   ssh_session mySession ;
-  MonitorInfo myMonitor[2] ;
+  MonitorInfo myMonitor[4] ;
 
   map<string,dbmSeq> devicesList ;
   //  ip    ,dbm
 
-  AP_Info( string i, string m0, string m1, ssh_session s ) {
+  AP_Info( string i, string m0, string m1, string m2, string m3, ssh_session s ) {
     ipAddr = i ;
     myMonitor[0].monIP = m0 ;
     myMonitor[0].mySession = ssh_new() ;
@@ -172,6 +175,12 @@ public:
     myMonitor[1].monIP = m1 ;
     myMonitor[1].mySession = ssh_new() ;
     CreateSSH_Link( myMonitor[1].mySession, myMonitor[1].monIP ) ;
+    myMonitor[2].monIP = m2 ;
+    myMonitor[2].mySession = ssh_new() ;
+    CreateSSH_Link( myMonitor[2].mySession, myMonitor[2].monIP ) ;
+    myMonitor[3].monIP = m3 ;
+    myMonitor[3].mySession = ssh_new() ;
+    CreateSSH_Link( myMonitor[3].mySession, myMonitor[3].monIP ) ;
     mySession = s ;
   } // AP_Info() initialize
 };
@@ -222,11 +231,11 @@ char * GetMonitorData( ssh_channel channel ) {
   } // for
 
   return result ;
-} // GetAllStationData()
+} // GetMonitorData()
 
 int show_remote_processes( AP_Info * thisAP ) {
   int curDataCounter = -1 ;
-  // cout << "ININININININI" << curDataCounter << endl ;
+
   ssh_channel channel ;
   int rc = 0, nbytes = 0 ;
 
@@ -319,10 +328,10 @@ int Get_Monitor_db( MonitorInfo thisMon, string targetMAC ) {
 
   if ( thisMon.myChannel == NULL ) {
     thisMon.myChannel = ssh_channel_new( thisMon.mySession );
-    cout << "Monitor: (" << thisMon->monIP << ")create channel..." << endl ;
+    cout << "Monitor: (" << thisMon.monIP << ")create channel..." << endl ;
 
     if ( thisMon.myChannel == NULL ) {
-      cout << "Monitor: (" << thisMon->monIP << ")create failed (null)..." << endl ;
+      cout << "Monitor: (" << thisMon.monIP << ")create failed (null)..." << endl ;
       return SSH_ERROR ;
     }
 
@@ -330,13 +339,13 @@ int Get_Monitor_db( MonitorInfo thisMon, string targetMAC ) {
 
   rc = ssh_channel_open_session( thisMon.myChannel ) ;
   if ( rc != SSH_OK ) {
-    cout << "Monitor: (" << thisMon->monIP << ")create failed (SSH NOT OK)..." << endl ;
+    cout << "Monitor: (" << thisMon.monIP << ")create failed (SSH NOT OK)..." << endl ;
     ssh_channel_free( thisMon.myChannel );
     return rc;
   } // if
 
   else {
-    cout << "Monitor: (" << thisMon->monIP << ")create successful" << endl ;
+    cout << "Monitor: (" << thisMon.monIP << ")create successful" << endl ;
     char allData[2048] = "" ;
     while ( result == 0 ) {
       rc = ssh_channel_request_exec( thisMon.myChannel, ss.str().c_str() );
@@ -372,7 +381,8 @@ int Get_Monitor_db( MonitorInfo thisMon, string targetMAC ) {
 void CreateAP_Link( RasPI_Area thisArea, vector<thread> & threads ) {
   for ( int i = 0 ; i < RasPI_AP_Num ; i ++ ) {
     allAP.push_back( *new AP_Info( thisArea.AP, thisArea.Mon[0],
-                                   thisArea.Mon[1], ssh_new() ) ) ;
+                                   thisArea.Mon[1], thisArea.Mon[2],
+                                   thisArea.Mon[3], ssh_new() ) ) ;
 
     if ( CreateSSH_Link( allAP.at(i).mySession, allAP.at(i).ipAddr ) ) {
       threads.push_back( thread( show_remote_processes, &allAP.at(i) ) ) ;
@@ -381,11 +391,48 @@ void CreateAP_Link( RasPI_Area thisArea, vector<thread> & threads ) {
   } // for
 } // CreateAP_Link()
 
+vector<RasPI_Area> GetAreaFromConfig() {
+    // get input area ip address in "config.conf" file
+    vector<RasPI_Area> vector_input_area ;
+    FILE * confFile = fopen( "config.conf", "r") ;
+    string temp[5] ;
+    char ch[100] ;
+    if ( confFile != NULL ) {
+        while ( fscanf( confFile, "%s", ch ) != EOF ) {
+            temp[0] = ch ;
+            // AP address
+            fscanf( confFile, "%s", ch ) ;
+            temp[1] = ch ;
+            // MON1 address
+            fscanf( confFile, "%s", ch ) ;
+            temp[2] = ch ;
+            // MON2 address
+            fscanf( confFile, "%s", ch ) ;
+            temp[3] = ch ;
+            // MON3 address
+            fscanf( confFile, "%s", ch ) ;
+            temp[4] = ch ;
+            // MON4 address
+
+            RasPI_Area temp_area( temp[0], temp[1], temp[2], temp[3], temp[4] ) ;
+            vector_input_area.push_back( temp_area ) ;
+        }
+    }
+    else {
+        cout << "No config.conf in the directory!" << endl ;
+        return vector_input_area ;
+    }
+
+    return vector_input_area ;
+} // GetAreaFromConfig()
+
+
 int main() {
   vector<thread> threads ;
-  RasPI_Area area_1( "192.168.1.10", "192.168.1.12", "192.168.1.13" ) ;
-  CreateAP_Link( area_1, threads ) ;
 
+  vector<RasPI_Area> vector_area = GetAreaFromConfig() ;
+  CreateAP_Link( vector_area.at(0), threads ) ;
+/*
   while ( true ) {
     for ( int i = 0 ; i < allAP.size() ; i ++ ) {
       for ( map<string,dbmSeq>::iterator it = allAP.at(i).devicesList.begin() ; it != allAP.at(i).devicesList.end() ; ) {
@@ -416,6 +463,6 @@ int main() {
 
   for ( int i = 0 ; i < threads.size() ; i ++ )
     threads.at(i).join() ;
-
+*/
   return 0 ;
 } // main()
