@@ -173,18 +173,27 @@ public:
   AP_Info( string i, string m0, string m1, string m2, string m3, ssh_session s ) {
     ipAddr = i ;
     myMonitor[0].monIP = m0 ;
-    myMonitor[0].mySession = ssh_new() ;
-    CreateSSH_Link( myMonitor[0].mySession, myMonitor[0].monIP ) ;
     myMonitor[1].monIP = m1 ;
-    myMonitor[1].mySession = ssh_new() ;
-    CreateSSH_Link( myMonitor[1].mySession, myMonitor[1].monIP ) ;
     myMonitor[2].monIP = m2 ;
-    myMonitor[2].mySession = ssh_new() ;
-    CreateSSH_Link( myMonitor[2].mySession, myMonitor[2].monIP ) ;
     myMonitor[3].monIP = m3 ;
+
+    myMonitor[0].mySession = ssh_new() ;
+    if ( !CreateSSH_Link( myMonitor[0].mySession, myMonitor[0].monIP ) )
+        myMonitor[0].mySession = NULL ;
+
+    myMonitor[1].mySession = ssh_new() ;
+    if ( !CreateSSH_Link( myMonitor[1].mySession, myMonitor[1].monIP ) )
+        myMonitor[1].mySession = NULL ;
+
+    myMonitor[2].mySession = ssh_new() ;
+    if ( !CreateSSH_Link( myMonitor[2].mySession, myMonitor[2].monIP ) )
+        myMonitor[2].mySession = NULL ;
+
     myMonitor[3].mySession = ssh_new() ;
-    CreateSSH_Link( myMonitor[3].mySession, myMonitor[3].monIP ) ;
+    if ( !CreateSSH_Link( myMonitor[3].mySession, myMonitor[3].monIP ) )
+        myMonitor[3].mySession = NULL ;
     mySession = s ;
+
   } // AP_Info() initialize
 };
 
@@ -194,7 +203,7 @@ vector<thread> v_shelter_monitor ;
 // this is a shelter for those monitor threads
 
 void monitor_manager( AP_Info* thisArea, string targetMAC ) ;
-int Get_Monitor_db( MonitorInfo thisMon, string targetMAC, int index_handle ) ;
+int Get_Monitor_db( MonitorInfo thisMon, string targetMAC, ssh_session session, int index_handle ) ;
 int show_remote_processes( AP_Info * thisAP ) ;
 // function definition
 
@@ -251,7 +260,7 @@ int show_remote_processes( AP_Info * thisAP ) {
   int rc = 0, nbytes = 0 ;
 
   while ( true ) {
-    cout << "AP: (" << thisAP->ipAddr << ")create channel..." << endl ;
+    //cout << "AP: (" << thisAP->ipAddr << ")create channel..." << endl ;
     channel = ssh_channel_new( thisAP->mySession );
     // create a ssh channel in thisAP->mySession
 
@@ -276,7 +285,7 @@ int show_remote_processes( AP_Info * thisAP ) {
       return rc ;
     } // if
     else {
-      cout << "AP: (" << thisAP->ipAddr << ")create successful" << endl ;
+      //cout << "AP: (" << thisAP->ipAddr << ")create successful" << endl ;
       string targetMAC = "" ;
 
       char * allData = GetAllStationData( channel ) ;
@@ -299,10 +308,10 @@ int show_remote_processes( AP_Info * thisAP ) {
           isMAC = false ;
         } // else if
         else if ( isSignal ) {
-          thisAP->devicesList[ targetMAC ].signal[0] = atoi( pch ) ;
+          devicesList2[ targetMAC ].signal[0] = atoi( pch ) ;
           thisAP->devicesList[ targetMAC ].seq = seqNum ;
 
-          if ( thisAP->devicesList[ targetMAC ].b_HasThread == false ) {
+          if ( devicesList2[ targetMAC ].b_HasThread == false ) {
               monitor_manager( thisAP, targetMAC ) ;
           } // if it didn't has monitor threads
 
@@ -332,71 +341,84 @@ int show_remote_processes( AP_Info * thisAP ) {
   return SSH_OK ;
 } // show_remote_processes()
 
-int Get_Monitor_db( MonitorInfo thisMon, string targetMAC, int index_handle ) {
+int Get_Monitor_db( MonitorInfo thisMon, string targetMAC, ssh_session session, int index_handle ) {
   int curDataCounter = -1 ;
   stringstream ss ;
-  ss << "tcpdump -i wlan0 \'ether src " << targetMAC
-     << "\' -c 6" ;
+
+  ss << "tcpdump -i wlan0 \'ether src " << targetMAC << "\'" ;
   // make command for openwrt monitor
 
-  ssh_channel channel ;
+  ssh_channel channel = NULL ;
   int rc, nbytes, result = 0 ;
 
-  if ( thisMon.myChannel == NULL ) {
-    thisMon.myChannel = ssh_channel_new( thisMon.mySession );
+
+  if ( channel == NULL ) {
+    channel = ssh_channel_new( session );
     cout << "Monitor: (" << thisMon.monIP << ")create channel..." << endl ;
 
-    if ( thisMon.myChannel == NULL ) {
+    if ( channel == NULL ) {
       cout << "Monitor: (" << thisMon.monIP << ")create failed (null)..." << endl ;
       return SSH_ERROR ;
     }
 
   } // if
 
-  rc = ssh_channel_open_session( thisMon.myChannel ) ;
+  rc = ssh_channel_open_session( channel ) ;
   if ( rc != SSH_OK ) {
     cout << "Monitor: (" << thisMon.monIP << ")create failed (SSH NOT OK)..." << endl ;
-    ssh_channel_free( thisMon.myChannel );
+    ssh_channel_free( channel );
     return rc;
   } // if
 
   else {
     cout << "Monitor: (" << thisMon.monIP << ")create successful" << endl ;
-    char allData[2048] = "" ;
+    char allData[256] = "" ;
     while ( result == 0 ) {
-      rc = ssh_channel_request_exec( thisMon.myChannel, ss.str().c_str() );
+      rc = ssh_channel_request_exec( channel, ss.str().c_str() );
       // execute the tcpdump command
 
-      if ( rc != SSH_OK )
+      if ( rc != SSH_OK ) {
+        //cout << "im here \n" ;
         return rc ;
+      }
 
       while ( true ) {
-          nbytes = ssh_channel_read( thisMon.myChannel, allData, 2048, 0 ) ;
+          nbytes = ssh_channel_read( channel, allData, 256, 0 ) ;
           if ( nbytes < 0 )
             return SSH_ERROR;
 
-          char * pch = strtok( allData, " \n\t" ) ;
+          char * pch = strtok( allData, " " ) ;
           while ( pch != NULL ) {
+
             if ( pch[ strlen( pch ) - 1 ] == 'B' && pch[ strlen( pch ) - 2 ] == 'd' ) {
               //pch[ strlen( pch ) - 1 ] = '\0' ;
               //pch[ strlen( pch ) - 2 ] = '\0' ;
-              // cout << pch << endl ;
+              //cout << atoi( pch ) << endl ;
 
               // Does here need mylock.lock() ?
               devicesList2[ targetMAC ].signal[index_handle] = atoi( pch ) ; // handle the dbm for the devicesList
+              //cout << " test >> " << devicesList2[ targetMAC ].signal[index_handle] ;
               // result = atoi( pch ) ;
             } // if
 
-            pch = strtok( NULL, " \n\t" );
+            pch = strtok( NULL, " " );
           } // ( pch != NULL )
 
           if ( devicesList2[ targetMAC ].b_HasThread == false ) {
+            ssh_channel_send_eof(channel);
+            ssh_channel_close(channel);
+            ssh_channel_free(channel);
+            ssh_disconnect( session ) ;
+            ssh_free( session ) ;
+            cout << "Monitor: (" << thisMon.monIP << ") close" << endl ;
+            //cout << targetMAC << " => " << devicesList2[ targetMAC ].b_HasThread << endl ;
             return 0 ;
           } // if the MAC is disconnected, this thread will return ;
 
       } // while ( true )
 
     } // while
+
 
   } // else
 
@@ -406,12 +428,46 @@ int Get_Monitor_db( MonitorInfo thisMon, string targetMAC, int index_handle ) {
 
 
 void monitor_manager( AP_Info* thisArea, string targetMAC ) {
-    v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[0], targetMAC, 1 ) ) ; // handle index 1 -> mon0
-    v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[1], targetMAC, 2 ) ) ; // handle index 2 -> mon1
-    v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[2], targetMAC, 3 ) ) ; // handle index 3 -> mon2
-    v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[3], targetMAC, 4 ) ) ; // handle index 4 -> mon3
-
     devicesList2[ targetMAC ].b_HasThread = true ;
+
+    ssh_session temp_session ;
+
+    if ( thisArea->myMonitor[0].mySession == NULL )
+        cout << "Monitor: (" << thisArea->myMonitor[0].monIP << ") session is null" << endl ;
+    else {
+        temp_session = ssh_new() ;
+        CreateSSH_Link( temp_session, thisArea->myMonitor[0].monIP ) ;
+        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[0],
+                                             targetMAC, temp_session, 1 ) ) ; // handle index 1 -> mon0
+    }
+
+    if ( thisArea->myMonitor[1].mySession == NULL )
+        cout << "Monitor: (" << thisArea->myMonitor[1].monIP << ") session is null" << endl ;
+    else {
+        temp_session = ssh_new() ;
+        CreateSSH_Link( temp_session, thisArea->myMonitor[1].monIP ) ;
+        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[1],
+                                             targetMAC, temp_session, 2 ) ) ; // handle index 2 -> mon1
+    }
+
+    if ( thisArea->myMonitor[2].mySession == NULL )
+        cout << "Monitor: (" << thisArea->myMonitor[2].monIP << ") session is null" << endl ;
+    else {
+        temp_session = ssh_new() ;
+        CreateSSH_Link( temp_session, thisArea->myMonitor[2].monIP ) ;
+        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[2],
+                                             targetMAC, temp_session, 3 ) ) ; // handle index 3 -> mon2
+    }
+
+    if ( thisArea->myMonitor[3].mySession == NULL )
+        cout << "Monitor: (" << thisArea->myMonitor[3].monIP << ") session is null" << endl ;
+    else {
+        temp_session = ssh_new() ;
+        CreateSSH_Link( temp_session, thisArea->myMonitor[3].monIP ) ;
+        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[3],
+                                             targetMAC, temp_session, 4 ) ) ; // handle index 4 -> mon3
+    }
+
     return ;
 }
 
@@ -471,7 +527,7 @@ int main() {
   vector<thread> threads ;
 
   vector<RasPI_Area> vector_area = GetAreaFromConfig() ;
-  //CreateAP_Link( vector_area.at(0), threads ) ;
+  CreateAP_Link( vector_area.at(0), threads ) ;
 /*
   cout << devicesList2[ "inin" ].b_HasThread << "   bool" << endl ;
   devicesList2[ "inin" ].seq = 15 ;
@@ -484,22 +540,25 @@ int main() {
   cout << devicesList2[ "inin" ].b_HasThread << "   bool" << endl ;
 */
   while ( true ) {
-/*
+    system( "CLS" ) ;
     for ( int i = 0 ; i < allAP.size() ; i ++ ) {
       for ( map<string,dbmSeq>::iterator it = allAP.at(i).devicesList.begin() ; it != allAP.at(i).devicesList.end() ; ) {
         if ( it->second.seq != seqNum ) {
           map<string,dbmSeq>::iterator it2 = it ;
           it ++ ;
           allAP.at(i).devicesList.erase( it2 ) ;
+
         } // if
         else {
           stringstream ss ;
+          //mylock.lock() ;
+
           ss << allAP.size() << " " << allAP.at(i).devicesList.size() << endl ;
           ss << "RasPI #" << i << " " << it->first << " -> "
-             << it->second.signal[0] << " " << Get_Monitor_db( allAP.at(i).myMonitor[0], it->first ) << " "
-             << Get_Monitor_db( allAP.at(i).myMonitor[1], it->first ) << " "
-             << "seq: " << it->second.seq << endl ;
-
+             << devicesList2[ it->first ].signal[0] << " " << devicesList2[ it->first ].signal[1] << " "
+             << devicesList2[ it->first ].signal[2] << " " << devicesList2[ it->first ].signal[3] << " "
+             << devicesList2[ it->first ].signal[4] << " " << "seq: " << it->second.seq << endl ;
+          //mylock.unlock() ;
           cout << ss.str() ;
           it ++ ;
         } // else
@@ -510,7 +569,7 @@ int main() {
 
     seqNum = !seqNum ;
      this_thread::sleep_for( std::chrono::milliseconds(100) ) ;
-*/
+
   } // while (true)
 
   for ( int i = 0 ; i < threads.size() ; i ++ )
