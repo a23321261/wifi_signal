@@ -1,0 +1,73 @@
+# depslib dependency file v1.0
+1453259891 source:c:\users\ab167943\desktop\sshclient\main.cpp
+	<iostream>
+	<cstdio>
+	<cstdlib>
+	<strings.h>
+	<string>
+	<thread>
+	<map>
+	<vector>
+	<mutex>
+	<sstream>
+	<chrono>
+	<Define_class.h>
+	<SSH_IO.h>
+	<global_variable.h>
+
+1453260681 source:c:\users\ab167943\desktop\sshclient\include\define_class.h
+	<string>
+	<libssh/libssh.h>
+	<map>
+
+1453259475 source:c:\users\ab167943\desktop\sshclient\src\define_class.cpp
+	<Define_class.h>
+	<SSH_IO.h>
+
+1453259666 source:c:\users\ab167943\desktop\sshclient\include\global_variable.h
+	<vector>
+	<map>
+	<thread>
+	<Define_class.h>
+
+1453262088 source:c:\users\ab167943\desktop\sshclient\include\remote_processes.h
+	<Define_class.h>
+	<string>
+	<sstream>
+	<iostream>
+	<global_variable.h>
+	<libssh/libssh.h>
+	<monitor_manage.cpp>
+
+1453257653 source:c:\users\ab167943\desktop\sshclient\include\ssh_io.h
+	<Define_class.h>
+	<thread>
+	<vector>
+	<iostream>
+	<string>
+	<libssh/libssh.h>
+	<SSH_IO.cpp>
+
+1453259616 source:c:\users\ab167943\desktop\sshclient\include\ap_management.h
+
+1453259891 source:c:\users\ab167943\desktop\sshclient\src\monitor_manage.cpp
+	<monitor_manage.h>
+
+1453262145 source:c:\users\ab167943\desktop\sshclient\include\monitor_manage.h
+	<Define_class.h>
+	<string>
+	<iostream>
+	<libssh/libssh.h>
+	<global_variable.h>
+
+1453267828 source:c:\users\ab167943\desktop\sshclient\include\define_class.hpp
+	<string>
+	<libssh/libssh.h>
+	<map>
+
+1453267827 source:c:\users\ab167943\desktop\sshclient\include\global_variable.hpp
+	<vector>
+	<map>
+	<thread>
+	<Define_class.hpp>
+
