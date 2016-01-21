@@ -1,8 +1,11 @@
 #define RasPI_AP_Num 1
-
-#include <SSH_IO.hpp>
-#include <remote_processes.cpp>
-
+#include <libssh/libssh.h>
+#include <iostream>
+#include <Define_class.h>
+#include <vector>
+#include <thread>
+#include <global_variable.h>
+#include <remote_processes.h>
 using namespace std ;
 
 int verify_knownhost(ssh_session session) {

@@ -1,10 +1,11 @@
-#include <remote_processes.hpp>
-#include <normalLib.h>
-#include <SSH_IO.hpp>
-#include <Define_class.hpp>
-#include <monitor_manage.hpp>
-#include <global_variable.hpp>
-
+#include <libssh/libssh.h>
+#include <vector>
+#include <Define_class.h>
+#include <sstream>
+#include <iostream>
+#include <global_variable.h>
+#include <SSH_IO.h>
+#include <monitor_manage.h>
 using namespace std ;
 
 char * GetAllStationData( ssh_channel channel ) {
@@ -114,49 +115,6 @@ int Get_Monitor_db( MonitorInfo thisMon, string targetMAC, ssh_session session, 
 
     return result ;
 } // Get_Monitor_db()
-
-void monitor_manager( AP_Info* thisArea, string targetMAC ) {
-    devicesList2[ targetMAC ].b_HasThread = true ;
-    ssh_session temp_session ;
-
-    if ( thisArea->myMonitor[0].mySession == NULL )
-        cout << "Monitor: (" << thisArea->myMonitor[0].monIP << ") session is null" << endl ;
-    else {
-        temp_session = ssh_new() ;
-        CreateSSH_Link( temp_session, thisArea->myMonitor[0].monIP ) ;
-        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[0],
-                                             targetMAC, temp_session, 1 ) ) ; // handle index 1 -> mon0
-    }
-
-    if ( thisArea->myMonitor[1].mySession == NULL )
-        cout << "Monitor: (" << thisArea->myMonitor[1].monIP << ") session is null" << endl ;
-    else {
-        temp_session = ssh_new() ;
-        CreateSSH_Link( temp_session, thisArea->myMonitor[1].monIP ) ;
-        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[1],
-                                             targetMAC, temp_session, 2 ) ) ; // handle index 2 -> mon1
-    }
-
-    if ( thisArea->myMonitor[2].mySession == NULL )
-        cout << "Monitor: (" << thisArea->myMonitor[2].monIP << ") session is null" << endl ;
-    else {
-        temp_session = ssh_new() ;
-        CreateSSH_Link( temp_session, thisArea->myMonitor[2].monIP ) ;
-        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[2],
-                                             targetMAC, temp_session, 3 ) ) ; // handle index 3 -> mon2
-    }
-
-    if ( thisArea->myMonitor[3].mySession == NULL )
-        cout << "Monitor: (" << thisArea->myMonitor[3].monIP << ") session is null" << endl ;
-    else {
-        temp_session = ssh_new() ;
-        CreateSSH_Link( temp_session, thisArea->myMonitor[3].monIP ) ;
-        v_shelter_monitor.push_back( thread( Get_Monitor_db, thisArea->myMonitor[3],
-                                             targetMAC, temp_session, 4 ) ) ; // handle index 4 -> mon3
-    }
-
-    return ;
-}
 
 int createAP_Process( AP_Info * thisAP ) {
     int curDataCounter = -1 ;

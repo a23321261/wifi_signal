@@ -33,8 +33,16 @@
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="include/Define_class.h" />
+		<Unit filename="include/SSH_IO.h" />
+		<Unit filename="include/global_variable.h" />
+		<Unit filename="include/monitor_manage.h" />
+		<Unit filename="include/normalLib.h" />
+		<Unit filename="include/remote_processes.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="src/Define_class.cpp" />
 		<Unit filename="src/SSH_IO.cpp" />
+		<Unit filename="src/monitor_manage.cpp" />
+		<Unit filename="src/remote_processes.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />

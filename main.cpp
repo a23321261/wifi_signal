@@ -1,23 +1,8 @@
 #define LIBSSH_STATIC
 
-#include <iostream>
-#include <cstdio>
-#include <cstdlib>
-#include <strings.h>
-#include <string>
-#include <thread>
-#include <map>
-#include <vector>
-#include <mutex>
-#include <sstream>
-#include <chrono>
-#include <Define_class.hpp>
-#include <SSH_IO.hpp>
-#include <monitor_manage.hpp>
-#include <global_variable.hpp>
-
+#include <normalLib.h>
+#include <global_variable.h>
 using namespace std;
-
 
 mutex mylock ;
 // lock data

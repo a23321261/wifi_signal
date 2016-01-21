@@ -1,7 +1,10 @@
-#include <Define_class.hpp>
-#include <SSH_IO.cpp>
+#include <Define_class.h>
+#include <vector>
+#include <thread>
 
-using namespace std ;
+int verify_knownhost( ssh_session session ) ;
+bool CreateSSH_Link( ssh_session & targetSession, string targetIP ) ;
+void CreateAP_Link( RasPI_Area thisArea, vector<thread> & threads ) ;
 
 RasPI_Area::RasPI_Area( string _AP, string _mon0, string _mon1, string _mon2, string _mon3 ) {
     AP = _AP ;

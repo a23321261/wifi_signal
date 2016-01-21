@@ -1,5 +1,8 @@
-#include <monitor_manage.hpp>
-
+#include <Define_class.h>
+#include <global_variable.h>
+#include <iostream>
+#include <remote_processes.h>
+#include <SSH_IO.h>
 using namespace std ;
 
 void monitor_manager( AP_Info* thisArea, string targetMAC ) {
