@@ -1,5 +1,5 @@
 #define LIBSSH_STATIC
-#define RasPI_AP_Num 1
+#define RasPI_AP_Num 4
 
 #include <iostream>
 #include <cstdio>
@@ -103,14 +103,20 @@ int verify_knownhost(ssh_session session)
 } // verify_knownhost()
 
 bool CreateSSH_Link( ssh_session & targetSession, string targetIP ) {
-
+cout << targetIP << "end" << endl ;
   int rc = 0 ;
-  if ( targetSession == NULL )
+  if ( targetSession == NULL ) {
+    cout << "NULL session\n" ;
     exit(-1) ;
+  }
 
+  //targetSession = ssh_new() ;
   ssh_options_set( targetSession, SSH_OPTIONS_HOST, targetIP.c_str() ) ;
+  //cout << "fuck here\n" ;
   rc = ssh_connect( targetSession ) ;
   // rc -> ssh
+  //cout << "here????\n" ;
+
   if ( rc != SSH_OK ) {
     cerr << "Error connecting to " << targetIP << " "
          << ssh_get_error( targetSession ) << endl ;
@@ -164,7 +170,7 @@ map<string,dbmSeq> devicesList2 ;
 class AP_Info {
 public:
   string ipAddr ;
-  ssh_session mySession ;
+  ssh_session mySession = NULL ;
   MonitorInfo myMonitor[4] ;
 
   map<string,dbmSeq> devicesList ;
@@ -178,26 +184,27 @@ public:
     myMonitor[3].monIP = m3 ;
 
     myMonitor[0].mySession = ssh_new() ;
-    if ( !CreateSSH_Link( myMonitor[0].mySession, myMonitor[0].monIP ) )
+    //if ( !CreateSSH_Link( myMonitor[0].mySession, myMonitor[0].monIP ) )
         myMonitor[0].mySession = NULL ;
-
+cout << " mon 0" << endl ;
     myMonitor[1].mySession = ssh_new() ;
-    if ( !CreateSSH_Link( myMonitor[1].mySession, myMonitor[1].monIP ) )
+    //if ( !CreateSSH_Link( myMonitor[1].mySession, myMonitor[1].monIP ) )
         myMonitor[1].mySession = NULL ;
-
+cout << " mon 1" << endl ;
     myMonitor[2].mySession = ssh_new() ;
-    if ( !CreateSSH_Link( myMonitor[2].mySession, myMonitor[2].monIP ) )
+    //if ( !CreateSSH_Link( myMonitor[2].mySession, myMonitor[2].monIP ) )
         myMonitor[2].mySession = NULL ;
-
+cout << " mon 2" << endl ;
     myMonitor[3].mySession = ssh_new() ;
-    if ( !CreateSSH_Link( myMonitor[3].mySession, myMonitor[3].monIP ) )
+    //if ( !CreateSSH_Link( myMonitor[3].mySession, myMonitor[3].monIP ) )
         myMonitor[3].mySession = NULL ;
-    mySession = s ;
+cout << " mon 3" << endl ;
+    mySession = ssh_new() ;
 
   } // AP_Info() initialize
 };
 
-vector<AP_Info> allAP ;
+static vector<AP_Info> allAP ;
 
 vector<thread> v_shelter_monitor ;
 // this is a shelter for those monitor threads
@@ -258,6 +265,10 @@ int show_remote_processes( AP_Info * thisAP ) {
 
   ssh_channel channel ;
   int rc = 0, nbytes = 0 ;
+
+
+    //return -1 ;
+ //}
 
   while ( true ) {
     //cout << "AP: (" << thisAP->ipAddr << ")create channel..." << endl ;
@@ -471,20 +482,22 @@ void monitor_manager( AP_Info* thisArea, string targetMAC ) {
     return ;
 }
 
-void CreateAP_Link( RasPI_Area thisArea, vector<thread> & threads ) {
-  for ( int i = 0 ; i < RasPI_AP_Num ; i ++ ) {
+void CreateAP_Link( RasPI_Area thisArea, vector<thread> & threads, int area_index ) {
+  int i = area_index ;
+  //for ( int i = 0 ; i < RasPI_AP_Num ; i ++ ) {
     allAP.push_back( *new AP_Info( thisArea.AP, thisArea.Mon[0],
                                    thisArea.Mon[1], thisArea.Mon[2],
                                    thisArea.Mon[3], ssh_new() ) ) ;
     // build session
 
     if ( CreateSSH_Link( allAP.at(i).mySession, allAP.at(i).ipAddr ) ) {
+            cout << " end create ssh link\n" ;
       threads.push_back( thread( show_remote_processes, &allAP.at(i) ) ) ;
       cout << allAP.at(i).devicesList.size() << endl ;
     } // if
     // use the session to throw thread
 
-  } // for
+  //} // for
 } // CreateAP_Link()
 
 vector<RasPI_Area> GetAreaFromConfig() {
@@ -527,7 +540,19 @@ int main() {
   vector<thread> threads ;
 
   vector<RasPI_Area> vector_area = GetAreaFromConfig() ;
-  CreateAP_Link( vector_area.at(0), threads ) ;
+  cout << vector_area.at(0).AP << vector_area.at(0).Mon[0] << vector_area.at(0).Mon[1] << vector_area.at(0).Mon[2] << vector_area.at(0).Mon[3] << endl ;
+  cout << vector_area.at(1).AP << vector_area.at(1).Mon[0] << vector_area.at(1).Mon[1] << vector_area.at(1).Mon[2] << vector_area.at(1).Mon[3] << endl ;
+  cout << vector_area.at(2).AP << vector_area.at(2).Mon[0] << vector_area.at(2).Mon[1] << vector_area.at(2).Mon[2] << vector_area.at(2).Mon[3] << endl ;
+  //cout << vector_area.at(3).AP << vector_area.at(3).Mon[0] << vector_area.at(3).Mon[1] << vector_area.at(3).Mon[2] << vector_area.at(3).Mon[3] << endl ;
+
+  CreateAP_Link( vector_area.at(0), threads, 0 ) ;
+  cout << " end 1 " << endl ;
+  CreateAP_Link( vector_area.at(1), threads, 1 ) ;
+  cout << " end 2 " << endl ;
+  //CreateAP_Link( vector_area.at(2), threads, 2 ) ;
+  cout << " end 3 " << endl ;
+  //CreateAP_Link( vector_area.at(3), threads, 2 ) ;
+  cout << " end 4 " << endl ;
 /*
   cout << devicesList2[ "inin" ].b_HasThread << "   bool" << endl ;
   devicesList2[ "inin" ].seq = 15 ;
@@ -539,6 +564,7 @@ int main() {
   cout << devicesList2[ "inin" ].seq << "   two" << endl ;
   cout << devicesList2[ "inin" ].b_HasThread << "   bool" << endl ;
 */
+
   while ( true ) {
     system( "CLS" ) ;
     for ( int i = 0 ; i < allAP.size() ; i ++ ) {
@@ -554,7 +580,7 @@ int main() {
           //mylock.lock() ;
 
           ss << allAP.size() << " " << allAP.at(i).devicesList.size() << endl ;
-          ss << "RasPI #" << i << " " << it->first << " -> "
+          ss << "RasPI" << allAP.at(i).ipAddr << "#" << i << " " << it->first << " -> "
              << devicesList2[ it->first ].signal[0] << " " << devicesList2[ it->first ].signal[1] << " "
              << devicesList2[ it->first ].signal[2] << " " << devicesList2[ it->first ].signal[3] << " "
              << devicesList2[ it->first ].signal[4] << " " << "seq: " << it->second.seq << endl ;
