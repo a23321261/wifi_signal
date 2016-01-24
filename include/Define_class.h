@@ -2,7 +2,6 @@
 #define DEFINE_CLASS_H_INCLUDED
 #include <string>
 #include <map>
-#include <libssh/libssh.h>
 
 using namespace std ;
 

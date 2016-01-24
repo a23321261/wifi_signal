@@ -116,25 +116,25 @@ int Get_Monitor_db( MonitorInfo thisMon, string targetMAC, ssh_session session, 
     return result ;
 } // Get_Monitor_db()
 
-int createAP_Process( int AP_index ) {
+int createAP_Process( AP_Info * thisAP ) {
     int curDataCounter = -1 ;
 
     ssh_channel channel ;
     int rc = 0, nbytes = 0 ;
 
     while ( true ) {
-        //cout << "AP: (" << allAP.at(AP_index).ipAddr << ")create channel..." << endl ;
-        channel = ssh_channel_new( allAP.at(AP_index).mySession );
+        //cout << "AP: (" << thisAP->ipAddr << ")create channel..." << endl ;
+        channel = ssh_channel_new( thisAP->mySession );
         // create a ssh channel in thisAP->mySession
 
         if ( channel == NULL ) {
-            cout << "AP: (" << allAP.at(AP_index).ipAddr << ")create failed (null)" << endl ;
+            cout << "AP: (" << thisAP->ipAddr << ")create failed (null)" << endl ;
             return SSH_ERROR ;
         }
 
         rc = ssh_channel_open_session( channel ) ;
         if ( rc != SSH_OK ) {
-            cout << "AP: (" << allAP.at(AP_index).ipAddr << ")create failed (SSH NOT OK)" << endl ;
+            cout << "AP: (" << thisAP->ipAddr << ")create failed (SSH NOT OK)" << endl ;
             ssh_channel_free( channel );
             return rc;
         } // if
@@ -148,7 +148,7 @@ int createAP_Process( int AP_index ) {
             return rc ;
         } // if
         else {
-            //cout << "AP: (" << allAP.at(AP_index).ipAddr << ")create successful" << endl ;
+            //cout << "AP: (" << thisAP->ipAddr << ")create successful" << endl ;
             string targetMAC = "" ;
 
             char * allData = GetAllStationData( channel ) ;
@@ -172,10 +172,10 @@ int createAP_Process( int AP_index ) {
                 } // else if
                 else if ( isSignal ) {
                     devicesList2[ targetMAC ].signal[0] = atoi( pch ) ;
-                    allAP.at(AP_index).devicesList[ targetMAC ].seq = seqNum ;
+                    thisAP->devicesList[ targetMAC ].seq = seqNum ;
 
                     if ( devicesList2[ targetMAC ].b_HasThread == false ) {
-                        monitor_manager( allAP.at(AP_index), targetMAC ) ;
+                        monitor_manager( thisAP, targetMAC ) ;
                     } // if it didn't has monitor threads
 
                     isSignal = false ;
@@ -200,6 +200,6 @@ int createAP_Process( int AP_index ) {
     ssh_channel_send_eof(channel);
     ssh_channel_close(channel);
     ssh_channel_free(channel);
-    cout << "AP: (" << allAP.at(AP_index).ipAddr << ") close" << endl ;
+    cout << "AP: (" << thisAP->ipAddr << ") close" << endl ;
     return SSH_OK ;
 } // show_remote_processes()

@@ -7,7 +7,6 @@ using namespace std;
 mutex mylock ;
 // lock data
 
-vector<RasPI_Area> vector_area ;
 vector<AP_Info> allAP ;
 vector<thread> v_shelter_monitor ;
 map<string,dbmSeq> devicesList2 ;
@@ -38,8 +37,6 @@ vector<RasPI_Area> GetAreaFromConfig() {
 
             RasPI_Area temp_area( temp[0], temp[1], temp[2], temp[3], temp[4] ) ;
             vector_input_area.push_back( temp_area ) ;
-
-            ++RasPI_AP_Num ; // setting PI_number
         }
     } else {
         cout << "No config.conf in the directory!" << endl ;
@@ -51,19 +48,22 @@ vector<RasPI_Area> GetAreaFromConfig() {
 
 
 int main() {
-
     vector<thread> threads ;
 
-    vector_area = GetAreaFromConfig() ;
-
-    if ( vector_area.empty() ) {
-      exit(2) ;
-    }
-
-    CreateAP_Link( vector_area, threads ) ;
-
+    vector<RasPI_Area> vector_area = GetAreaFromConfig() ;
+    CreateAP_Link( vector_area.at(0), threads ) ;
+    /*
+      cout << devicesList2[ "inin" ].b_HasThread << "   bool" << endl ;
+      devicesList2[ "inin" ].seq = 15 ;
+      devicesList2[ "inin" ].b_HasThread = true ;
+      cout << devicesList2[ "inin" ].seq << "   one" << endl ;
+      cout << devicesList2[ "inin" ].b_HasThread << "   bool" << endl ;
+      map<string,dbmSeq>::iterator it = devicesList2.begin() ;
+      devicesList2.erase( it ) ;
+      cout << devicesList2[ "inin" ].seq << "   two" << endl ;
+      cout << devicesList2[ "inin" ].b_HasThread << "   bool" << endl ;
+    */
     while ( true ) {
-
         system( "CLS" ) ;
         for ( int i = 0 ; i < allAP.size() ; i ++ ) {
             for ( map<string,dbmSeq>::iterator it = allAP.at(i).devicesList.begin() ; it != allAP.at(i).devicesList.end() ; ) {
@@ -78,7 +78,7 @@ int main() {
                     //mylock.lock() ;
 
                     ss << allAP.size() << " " << allAP.at(i).devicesList.size() << endl ;
-                    ss << "RasPI" << allAP.at(i).ipAddr << "#" << i << " " << it->first << " -> "
+                    ss << "RasPI #" << i << " " << it->first << " -> "
                        << devicesList2[ it->first ].signal[0] << " " << devicesList2[ it->first ].signal[1] << " "
                        << devicesList2[ it->first ].signal[2] << " " << devicesList2[ it->first ].signal[3] << " "
                        << devicesList2[ it->first ].signal[4] << " " << "seq: " << it->second.seq << endl ;
