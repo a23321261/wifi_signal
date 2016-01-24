@@ -264,6 +264,7 @@ char * GetMonitorData( ssh_channel channel ) {
 
 int show_remote_processes( int AP_index ) {
   int curDataCounter = -1 ;
+  map<string, int[2]> AP_dulplicated ;
 
   ssh_channel channel ;
   int rc = 0, nbytes = 0 ;
@@ -318,12 +319,38 @@ int show_remote_processes( int AP_index ) {
           isMAC = false ;
         } // else if
         else if ( isSignal ) {
-          devicesList2[ targetMAC ].signal[0] = atoi( pch ) ;
-          allAP.at(AP_index).devicesList[ targetMAC ].seq = seqNum ;
 
-          if ( devicesList2[ targetMAC ].b_HasThread == false ) {
-              monitor_manager( allAP.at(AP_index), targetMAC ) ;
-          } // if it didn't has monitor threads
+          if ( AP_dulplicated[ targetMAC ][1] == 0 ) {
+            AP_dulplicated[ targetMAC ][0] = atoi( pch ) ;
+            ++AP_dulplicated[ targetMAC ][1] ;
+          } // first time get the AP signal
+          else if ( AP_dulplicated[ targetMAC ][1] > 0 ) {
+            if ( AP_dulplicated[ targetMAC ][0] == atoi( pch ) ) {
+              if ( AP_dulplicated[ targetMAC ][1] < 50 )
+                ++AP_dulplicated[ targetMAC ][1] ;
+            } // duplicate signal
+
+            if ( AP_dulplicated[ targetMAC ][0] != atoi( pch ) ) {
+              AP_dulplicated[ targetMAC ][0] = atoi( pch ) ;
+              AP_dulplicated[ targetMAC ][1] = 1 ;
+            } // different signal
+
+            if ( AP_dulplicated[ targetMAC ][1] < 50 ) {
+              devicesList2[ targetMAC ].signal[0] = atoi( pch ) ;
+              allAP.at(AP_index).devicesList[ targetMAC ].seq = seqNum ;
+              if ( devicesList2[ targetMAC ].b_HasThread == false ) {
+                monitor_manager( allAP.at(AP_index), targetMAC ) ;
+              } // if it didn't has monitor threads
+
+            } // acceptable range
+            else {
+              devicesList2[ targetMAC ].b_HasThread = false ;
+            } // unacceptable range, higher than threshold
+            // and do not update global signal list and kill the mon1 to mon4
+
+          } // else if
+
+
 
           isSignal = false ;
         } // else if
@@ -440,8 +467,8 @@ void monitor_manager( AP_Info thisArea, string targetMAC ) {
 
     ssh_session temp_session ;
 
-    if ( thisArea.myMonitor[0].mySession == NULL )
-        cout << "Monitor: (" << thisArea.myMonitor[0].monIP << ") session is null" << endl ;
+    if ( thisArea.myMonitor[0].mySession == NULL );
+        //cout << "Monitor: (" << thisArea.myMonitor[0].monIP << ") session is null" << endl ;
     else {
         temp_session = ssh_new() ;
         CreateSSH_Link( temp_session, thisArea.myMonitor[0].monIP ) ;
@@ -449,8 +476,8 @@ void monitor_manager( AP_Info thisArea, string targetMAC ) {
                                              targetMAC, temp_session, 1 ) ) ; // handle index 1 -> mon0
     }
 
-    if ( thisArea.myMonitor[1].mySession == NULL )
-        cout << "Monitor: (" << thisArea.myMonitor[1].monIP << ") session is null" << endl ;
+    if ( thisArea.myMonitor[1].mySession == NULL );
+        //cout << "Monitor: (" << thisArea.myMonitor[1].monIP << ") session is null" << endl ;
     else {
         temp_session = ssh_new() ;
         CreateSSH_Link( temp_session, thisArea.myMonitor[1].monIP ) ;
@@ -458,8 +485,8 @@ void monitor_manager( AP_Info thisArea, string targetMAC ) {
                                              targetMAC, temp_session, 2 ) ) ; // handle index 2 -> mon1
     }
 
-    if ( thisArea.myMonitor[2].mySession == NULL )
-        cout << "Monitor: (" << thisArea.myMonitor[2].monIP << ") session is null" << endl ;
+    if ( thisArea.myMonitor[2].mySession == NULL );
+        //cout << "Monitor: (" << thisArea.myMonitor[2].monIP << ") session is null" << endl ;
     else {
         temp_session = ssh_new() ;
         CreateSSH_Link( temp_session, thisArea.myMonitor[2].monIP ) ;
@@ -467,8 +494,8 @@ void monitor_manager( AP_Info thisArea, string targetMAC ) {
                                              targetMAC, temp_session, 3 ) ) ; // handle index 3 -> mon2
     }
 
-    if ( thisArea.myMonitor[3].mySession == NULL )
-        cout << "Monitor: (" << thisArea.myMonitor[3].monIP << ") session is null" << endl ;
+    if ( thisArea.myMonitor[3].mySession == NULL );
+        //cout << "Monitor: (" << thisArea.myMonitor[3].monIP << ") session is null" << endl ;
     else {
         temp_session = ssh_new() ;
         CreateSSH_Link( temp_session, thisArea.myMonitor[3].monIP ) ;
@@ -522,6 +549,8 @@ vector<RasPI_Area> GetAreaFromConfig() {
 
             RasPI_Area temp_area( temp[0], temp[1], temp[2], temp[3], temp[4] ) ;
             vector_input_area.push_back( temp_area ) ;
+
+            RasPI_AP_Num++ ;
         }
     }
     else {
@@ -535,9 +564,6 @@ vector<RasPI_Area> GetAreaFromConfig() {
 
 
 int main() {
-  cout << "how many AP? " << endl ;
-  cin >> RasPI_AP_Num ;
-
   vector<thread> threads ;
 
   vector_area = GetAreaFromConfig() ;
