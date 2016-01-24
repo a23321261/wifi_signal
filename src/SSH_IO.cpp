@@ -1,4 +1,3 @@
-#define RasPI_AP_Num 1
 #include <libssh/libssh.h>
 #include <iostream>
 #include <Define_class.h>
@@ -110,18 +109,21 @@ bool CreateSSH_Link( ssh_session & targetSession, string targetIP ) {
     return false ;
 } // CreateSSH_Link()
 
-void CreateAP_Link( RasPI_Area thisArea, vector<thread> & threads ) {
-    for ( int i = 0 ; i < RasPI_AP_Num ; i ++ ) {
-        allAP.push_back( *new AP_Info( thisArea.AP, thisArea.Mon[0],
-                                       thisArea.Mon[1], thisArea.Mon[2],
-                                       thisArea.Mon[3], ssh_new() ) ) ;
+void CreateAP_Link( vector<RasPI_Area> thisArea, vector<thread> & threads ) {
+
+    for ( int i = 0 ; i < 3 ; i ++ ) {
+
+        allAP.push_back( *new AP_Info( thisArea.at(i).AP, thisArea.at(i).Mon[0],
+                                       thisArea.at(i).Mon[1], thisArea.at(i).Mon[2],
+                                       thisArea.at(i).Mon[3], ssh_new() ) ) ;
         // build session
 
         if ( CreateSSH_Link( allAP.at(i).mySession, allAP.at(i).ipAddr ) ) {
-            threads.push_back( thread( createAP_Process, &allAP.at(i) ) ) ;
+            threads.push_back( thread( createAP_Process, i ) ) ;
             cout << allAP.at(i).devicesList.size() << endl ;
         } // if
         // use the session to throw thread
 
     } // for
+
 } // CreateAP_Link()

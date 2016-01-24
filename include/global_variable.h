@@ -17,5 +17,6 @@ extern vector<AP_Info> allAP ;
 extern vector<thread> v_shelter_monitor ;
 extern map<string,dbmSeq> devicesList2 ;
 extern int seqNum ;
+static int RasPI_AP_Num ;
 
 #endif // GLOBAL_VARIABLE_H_INCLUDED
