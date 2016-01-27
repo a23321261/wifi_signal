@@ -14,18 +14,18 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    ../GitHub/wifi_signal/src/SSH_IO.cpp \
-    ../GitHub/wifi_signal/src/remote_processes.cpp \
-    ../GitHub/wifi_signal/src/monitor_manage.cpp \
-    ../GitHub/wifi_signal/src/Define_class.cpp
+    Define_class.cpp \
+    monitor_manage.cpp \
+    remote_processes.cpp \
+    SSH_IO.cpp
 
 HEADERS  += mainwindow.h \
-    ../GitHub/wifi_signal/include/SSH_IO.h \
-    ../GitHub/wifi_signal/include/remote_processes.h \
-    ../GitHub/wifi_signal/include/normalLib.h \
-    ../GitHub/wifi_signal/include/monitor_manage.h \
-    ../GitHub/wifi_signal/include/global_variable.h \
-    ../GitHub/wifi_signal/include/Define_class.h
+    Define_class.h \
+    global_variable.h \
+    monitor_manage.h \
+    normalLib.h \
+    remote_processes.h \
+    SSH_IO.h
 
 FORMS    += mainwindow.ui
 
