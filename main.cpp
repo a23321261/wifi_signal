@@ -49,7 +49,6 @@ vector<RasPI_Area> GetAreaFromConfig() {
 
 int main() {
     vector<thread> threads ;
-    cout << "hello world!!" << endl ;
     vector<RasPI_Area> vector_area = GetAreaFromConfig() ;
     CreateAP_Link( vector_area.at(0), threads ) ;
     /*
